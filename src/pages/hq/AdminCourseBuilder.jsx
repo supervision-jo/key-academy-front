@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API } from '../../config'
-import { HiOutlineArrowRight, HiOutlineCheckCircle, HiOutlinePlus, HiOutlineTrash, HiOutlineChevronDown, HiOutlineChevronUp, HiOutlineDocumentText, HiOutlinePuzzlePiece, HiOutlineCog, HiOutlineVideoCamera, HiOutlinePaperClip, HiOutlineSparkles } from 'react-icons/hi2'
+import { HiOutlineArrowRight, HiOutlineCheckCircle, HiOutlinePlus, HiOutlineTrash, HiOutlineChevronDown, HiOutlineChevronUp, HiOutlineDocumentText, HiOutlinePuzzlePiece, HiOutlineCog, HiOutlineVideoCamera, HiOutlinePaperClip, HiOutlineSparkles, HiOutlineArrowDownTray } from 'react-icons/hi2'
 import './Admin.css'
 import 'mathlive'
 
@@ -772,6 +772,30 @@ export const AdminCourseBuilder = ({ id }) => {
         setModules(newMods);
         alert('تم لخبطة الخيارات بنجاح!');
     };
+
+    // تنزيل كل أسئلة الاختبار الذكي (الخيارات + الإجابة الصحيحة + التصحيح) كملف txt بصيغة JSON
+    const handleExportQuiz = async (qz) => {
+        if (!qz.id) {
+            alert('احفظ الدورة أولاً حتى يُحفظ الاختبار، ثم نزّل الأسئلة.')
+            return
+        }
+        try {
+            const tk = localStorage.getItem('access_token')
+            const res = await fetch(`${API}/api/hq/quizzes/${qz.id}/export/`, { headers: { 'Authorization': `Bearer ${tk}` } })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `quiz-${qz.id}.txt`
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
+        } catch (e) {
+            alert('تعذّر تنزيل الأسئلة: ' + e.message)
+        }
+    }
 
     const handleShuffleSmartQuiz = (mIndex, lIndex, qzIndex) => {
         const newMods = [...modules];
@@ -1618,6 +1642,11 @@ export const AdminCourseBuilder = ({ id }) => {
                                                                             <input type="number" value={qz.duration_minutes} onChange={e => updateQuiz(mIndex, lIndex, qzIndex, 'duration_minutes', parseInt(e.target.value) || 15)} style={{ width: '60px', padding: '5px', border: 'none', background: 'transparent', outline: 'none', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem' }} />
                                                                         </div>
                                                                         <button className="hq-action-btn edit" onClick={() => updateQuiz(mIndex, lIndex, qzIndex, 'showBuilder', !qz.showBuilder)} style={{ background: qz.showBuilder ? 'var(--hq-primary)' : '#e2e8f0', color: qz.showBuilder ? 'white' : '#475569', padding: '0 20px', borderRadius: '8px' }}>{qz.showBuilder ? 'إخفاء أسئلة' : 'الأسئلة والإجابات'}</button>
+                                                                        {qz.id && qz.questions.length > 0 && (
+                                                                            <button className="hq-action-btn edit" onClick={() => handleExportQuiz(qz)} title="تنزيل كل الأسئلة مع الخيارات والإجابة الصحيحة والتصحيح (ملف txt بصيغة JSON)" style={{ background: '#ecfdf5', color: '#047857', padding: '0 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                <HiOutlineArrowDownTray size={16} /> تنزيل الأسئلة
+                                                                            </button>
+                                                                        )}
                                                                         {qz.questions.length === 0 && <button className="hq-action-btn delete" onClick={() => removeQuiz(mIndex, lIndex, qzIndex)}><HiOutlineTrash /></button>}
                                                                     </div>
 
